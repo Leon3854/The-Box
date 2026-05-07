@@ -1,3 +1,4 @@
+
 # The-Box
 
 ## ТЗ: разработать два микросервиса на базе NestJs,  Product-service(карта товара) и Stock-service(склад)  с исползованием такоих инструментов как: Redis, RabbitMQ, Saga, Prisma, PostgresQL, GraphQL, WebSockets, gRPC.
@@ -14,3 +15,6 @@
 **Manual Ack (Ручное подтверждение):**  В Консьюмере  явно выключить autoAck. Написать channel.ack(msg) только ПОСЛЕ успешного await prisma.product.create(...). 
 
 **Ретраи и DLX (Очередь мертвых писем):** Настроить Кролика так, чтобы при ошибке сообщение не исчезало, а уходило на «второй круг» (retry) или в «отстойник» (dead-letter-queue) для анализа.
+
+# The Box Project
+
