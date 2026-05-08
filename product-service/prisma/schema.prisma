@@ -10,21 +10,35 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ProductStatus {
+  PENDING   // Создан, но склад еще не подтвердил
+  ACTIVE    // Прошел все проверки, на витрине
+  REJECTED  // Склад отклонил (например, SKU уже занят)
+  ARCHIVED  // Снят с продажи
+}
 
 model Product {
-	 id          String   @id @default(uuid())
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+	id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  
+  // Поля для Саги
+  status      ProductStatus @default(PENDING)
+  version     Int           @default(1) // Для контроля параллельных обновлений
+
   name        String
-  slug        String   @unique
+  slug        String        @unique
   description String?
   price       Int
-  sku         String   @unique
-  images      String[] // Массив изображений
-  categoryId  String // ID категории (без relation)
-  userId      String? // ID владельца/создателя (может быть null)
-  inStock     Boolean  @default(true)
-  stockCount  Int      @default(0)
+  sku         String        @unique // Артикул - по нему будем связываться со складом
+  images      String[] 
+  
+  categoryId  String 
+  userId      String? 
+  
+  inStock     Boolean       @default(true)
+  stockCount  Int           @default(0)
 
+  @@index([name]) // Индекс для быстрого поиска по имени
   @@map("products")
 }
