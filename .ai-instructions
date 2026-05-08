@@ -1,0 +1,23 @@
+# AI Context & Instructions for Telegram-API Project
+
+## 1. Project Overview
+Это микросервисная система уведомлений на NestJS.
+- **Producer Service**: API-шлюз (порт 3000), принимает HTTP POST GET UPDATE DELETE и пушит в RabbitMQ.
+- **Consumer Service**: API-шлюз (порт 3001), принимает HTTP POST GET UPDATE DELETE и пушит в RabbitMQ.
+
+## 2. Core Tech Stack
+- NestJS (Microservices)
+- RabbitMQ (Transport)
+- Redis (Idempotency Lock)
+- Swagger (Documentation)
+- Jest (Unit Testing)
+
+## 3. Architecture Rules (Критично)
+- **Manual Acknowledgement**: ВСЕГДА использовать `noAck: false`. Сообщение подтверждается (`ack`) ТОЛЬКО после успешной записи в БД.
+- **Idempotency First**: Перед любой операцией в Stock Service ОБЯЗАТЕЛЬНО проверить `messageId` в Redis (команда SET NX). Если ID существует — пропускаем обработку и шлем `ack`.
+- **Publisher Confirms**: Продюсер должен ждать подтверждения от RabbitMQ перед ответом клиенту.
+- **DTO Validation**: Все входящие данные должны проходить через `ValidationPipe`. Поле `messageId` (UUID) — обязательное.
+
+## 4. Error Handling & Retries
+- **Retry Strategy**: При ошибке соединения с RabbitMQ использовать `amqp-connection-manager` для автоматического переподключения.
+- **DLX (Dead Letter Exchange)**: Если сообщение не может быть обработано после 3-х попыток, оно должно быть перенаправлено в `dlx_queue`.

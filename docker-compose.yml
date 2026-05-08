@@ -1,0 +1,152 @@
+services:
+  product-service:
+    build:
+      context: ./product-service 
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL} || amqp://guest:guest@rabbitmq:5672
+      # - CLICKHOUSE_HOST=monitoring-clickhouse
+      - PORT=${PORT}
+    ports:
+      - '3002:3000'
+    volumes:
+      - .:/app  # для hot-reload
+      - /app/node_modules
+    # logging: # Включаем "сбор логов" для Loki
+      # driver: "json-file"
+      # options:
+        # tag: "gateway-core"
+    depends_on:
+      thebox-db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      # loki: { condition: service_started } # Ждем лог-сервер
+    restart: unless-stopped
+  
+  # Stock Service
+  stock-service:
+    build:
+      context: ./stock-service 
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    ports:
+      - '3001:3001'
+    volumes:
+      - .:/app  # для hot-reload
+      - /app/node_modules
+    depends_on:
+      thebox-db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      # loki: { condition: service_started } # Ждем лог-сервер
+    restart: unless-stopped 
+  # --- OBSERVABILITY STACK ---
+
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: monitoring-prometheus
+  #   volumes:
+  #     - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #   ports:
+  #     - "9090:9090"
+  #   restart: unless-stopped
+
+  # loki:
+  #   image: grafana/loki:latest
+  #   container_name: monitoring-loki
+  #   ports:
+  #     - "3100:3100"
+  #   volumes:
+  #     - ./infra/loki/loki-config.yaml:/etc/loki/local-config.yaml
+  #   command: -config.file=/etc/loki/local-config.yaml
+  #   restart: unless-stopped
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: monitoring-grafana
+  #   depends_on:
+  #     - prometheus
+  #     - loki
+  #   ports:
+  #     - "3005:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #     - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+  #   volumes:
+  #     - ./infra/grafana/provisioning:/etc/grafana/provisioning
+  #   restart: unless-stopped
+
+  # --- ANALYTICS: ClickHouse ---
+  # monitoring-clickhouse:
+  #   image: clickhouse/clickhouse-server:latest
+  #   container_name: monitoring-clickhouse
+  #   ports:
+  #     - "8123:8123" # HTTP интерфейс
+  #     - "9000:9000" # Native интерфейс
+  #   volumes:
+  #     - clickhouse-data:/var/lib/clickhouse
+  #     - clickhouse-logs:/var/log/clickhouse
+  #   healthcheck:
+  #     test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+
+  # ----- Redis RabbitMQ ----
+  thebox-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: thebox_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - '5435:5432'
+    volumes:
+      - thebox-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # RabbitMQ(arm64 compatible)
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq
+    ports:
+      - '5673:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: unless-stopped
+
+  #Redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - '6379:6379'
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  thebox-db-data:
+  redis_data:
+  # clickhouse-data:
+  # clickhouse-logs:
