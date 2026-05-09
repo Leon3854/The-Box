@@ -12,6 +12,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 	private readonly logger = new Logger(RedisService.name);
 	private client: Redis;
 	
+	/**
+	 * @description - Хук жизненного цикла
+	 */
 	async onModuleInit() {
 		this.client = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 		this.logger.log('Redis client connected');
@@ -31,17 +34,46 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 		const result = await this.client.set(`idemp:${key}`, 'locked', 'EX', ttl, 'NX' )
 
 		if (result === 'OK') {
-      this.logger.log(`✅ Key [${key}] stored. Success.`);
+      this.logger.log(`Key [${key}] stored. Success.`);
       return true;
     }
 
 		 // Если попали сюда — значит, это дубликат!
-		 this.logger.warn(`⚠️ Duplicate detected! Key [${key}] already exists.`);
+		 this.logger.warn(`Duplicate detected! Key [${key}] already exists.`);
 		 return false;
-
 	}
 
+	/**
+	 * @param - key ключ
+	 * @description - Удаление уникального ключа. Можно будет исопльзовать для Saga
+	 * при срыве операции на старте
+	 */
+	async deleteIdempotencyKey(key: string): Promise<void> {
+		await this.client.del(`idemp:${key}`);
+		this.logger.log(` Key [${key}] removed (rollback/cleanup).`);
+	}
+
+	/**
+	 * @param - key
+	 * @description - Провека "жив ли" ключ или нет
+	 */
+	async existsKey(key: string): Promise<boolean> {
+		const result = await this.client.exists(`idemp:${key}`);
+
+		if(result === 1) {
+			this.logger.log(`Key [${key}] is EXISTS! Key is not detected.`)
+			return true 
+		}
+		this.logger.log(`Key [${key}] is not FOUND! Space is clear and free.`)
+		return false
+	}
+
+	/**
+	 * @description Хук жизненного цикла мягко завершит работу севрива
+	 */
 	async onModuleDestroy() {
-		
-	}
+    if (this.client) {
+      await this.client.quit();
+    }
+  }
 }
