@@ -20,6 +20,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 		this.logger.log('Redis client connected');
 	}
 
+	
+
 	/**
 	 * 
 	 * @param key приходит с клиентской стороны
@@ -31,7 +33,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 	 * его нет то он егу установит и пропишет "ok" в противном случает будет "null"
 	 */
 	async setIdempotencyKey(key: string, ttl: number=86400):Promise<boolean> {
-		const result = await this.client.set(`idemp:${key}`, 'locked', 'EX', ttl, 'NX' )
+		const result = await this.client.set(`product:${key}`, 'locked', 'EX', ttl, 'NX' )
 
 		if (result === 'OK') {
       this.logger.log(`Key [${key}] stored. Success.`);
@@ -49,7 +51,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 	 * при срыве операции на старте
 	 */
 	async deleteIdempotencyKey(key: string): Promise<void> {
-		await this.client.del(`idemp:${key}`);
+		await this.client.del(`product:${key}`);
 		this.logger.log(` Key [${key}] removed (rollback/cleanup).`);
 	}
 
@@ -58,7 +60,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 	 * @description - Провека "жив ли" ключ или нет
 	 */
 	async existsKey(key: string): Promise<boolean> {
-		const result = await this.client.exists(`idemp:${key}`);
+		const result = await this.client.exists(`product:${key}`);
 
 		if(result === 1) {
 			this.logger.log(`Key [${key}] is EXISTS! Key is not detected.`)
