@@ -27,12 +27,12 @@ export class RaabbitMQService implements OnModuleInit, OnModuleDestroy {
       json: true,
       setup: (channel: any) => {
         // Эта функция выполнится ПРИ КАЖДОМ реконнекте автоматически
-        this.logger.log('🛠️ Asserting Queue: order_events');
-        return channel.assertQueue('order_events',
+        this.logger.log('🛠️ Asserting Queue: product_events');
+        return channel.assertQueue('product_events',
 					{ 
 						durable: true,
 						arguments: {
-							'x-dead-letter-exchange': 'order_events_dlx', // Куда слать "трупы"
+							'x-dead-letter-exchange': 'product_events_dlx', // Куда слать "трупы"
 							'x-dead-letter-routing-key': 'failed_orders',
 						}
 				});
@@ -46,23 +46,24 @@ export class RaabbitMQService implements OnModuleInit, OnModuleDestroy {
 	/**
 	 * @data - какието данные 
 	 * @Promise - булеан значение ож
-   * @description Отправка заказа с подтверждением и встроенным ретраем транспорта
+   * @description Отправка события создания/обновления товара с подтверждением
    */
-  async sendOrderEvent(data: any): Promise<boolean> {
-    try {
-      // ChannelWrapper сам сделает ретрай отправки, если сеть моргнет
-      const result = await this.channelWrapper.sendToQueue('order_events', data, {
-        persistent: true,     // Сообщение выживет при рестарте Кролика
-        messageId: data.messageId, // Твой UUID для идемпотентности
-      });
-
-      this.logger.log(`🚀 Order [${data.messageId}] sent and confirmed by Broker`);
-      return result;
-    } catch (error) {
-      this.logger.error(`❌ Permanent failure sending order [${data.messageId}]`, error);
-      return false;
-    }
-  }
+		async sendProductEvent(data: any): Promise<boolean> {
+			try {
+				// Отправляем в очередь product_events (которую мы объявили в setup)
+				const result = await this.channelWrapper.sendToQueue('product_events', data, {
+					persistent: true,          // Выживет при падении Кролика
+					messageId: data.messageId, // Твой UUID
+				});
+	
+				this.logger.log(`🚀 Product Event [${data.messageId}] sent and confirmed`);
+				return result;
+			} catch (error) {
+				this.logger.error(`❌ Failed to send product event [${data.messageId}]`, error);
+				return false;
+			}
+		}
+	
 
 	/**
 	 * @description Мягкое завершение всех опираций
