@@ -41,4 +41,6 @@ model Product {
 
   @@index([name]) // Индекс для быстрого поиска по имени
   @@map("products")
+	@@index([sku])
+	@@index([status])
 }
