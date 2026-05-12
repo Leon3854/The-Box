@@ -52,3 +52,5 @@ __pycache__/
 venv/
 .venv/
 .env
+
+read.product.md
