@@ -24,11 +24,7 @@ export class ProductsService {
 	 * товары а уже потом только те что есть
 	 */
 	async findAll(): Promise<Product[]> {
-
 		this.logger.log('Fetching all products');
-
-		this.logger.log('🔍 Fetching all products');
-
 		return this.prisma.product.findMany({
 			where: { status: 'ACTIVE' }, // Показываем только живые товары
 			orderBy: { createdAt: 'desc' }, // Сначала новые
@@ -109,18 +105,14 @@ export class ProductsService {
           // Если Кролик не подтвердил — "взрываем" транзакцию для отката
           throw new Error('RabbitMQ Confirm Failed');
         }
+
         this.logger.log(`Product [${product.sku}] created and event sent`);
-        this.logger.log(`✅ Product [${product.sku}] created and event sent`);
         return product;
       });
     } catch (error) {
       // 4. ROLLBACK в Redis
       await this.redis.deleteIdempotencyKey(dto.messageId);
-
       this.logger.error(`Rollback executed for request [${dto.messageId}]`, error.stack);
-
-      this.logger.error(`❌ Rollback executed for request [${dto.messageId}]`, error.stack);
-
       
       throw new InternalServerErrorException('Ошибка при создании товара. Данные откачены.');
     }
@@ -172,40 +164,33 @@ export class ProductsService {
 						throw new Error('RabbitMQ не подтвердил событие смены статуса');
 					}
 	
-
 					this.logger.log(`Product [${id}] locked, updated to ${status} and confirmed`);
-
-					this.logger.log(`🔒 Product [${id}] locked, updated to ${status} and confirmed`);
-
 					return updatedProduct;
 				});
 			} catch (error) {
 				// 5. Откат (Rollback)
 				await this.redis.deleteIdempotencyKey(messageId);
-
 				this.logger.error(`Failed to update status for product [${id}]`, error.stack);
-
-				this.logger.error(`❌ Failed to update status for product [${id}]`, error.stack);
-
 				throw new InternalServerErrorException('Ошибка при обновлении статуса. Блокировка снята.');
 			}
 		}
 	
+
+
+
 	async removeProduct(id: string): Promise<Product> {
     try {
       const product = await this.prisma.product.update({
         where: { id },
 				data: { status: 'ARCHIVED' }, // Вместо удаления - в архив
       });
-
       this.logger.log(`Product [${product.name}] moved to Archive`);
-
-      this.logger.log(`📦 Product [${product.name}] moved to Archive`);
-
     	return product;
     } catch (error) {
       this.logger.error(`Error archiving product [${id}]`, error);
       throw new NotFoundException('Товар не найден или уже удален');
     }
   }
+
+
 }
