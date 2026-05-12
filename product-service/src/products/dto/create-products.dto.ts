@@ -13,7 +13,7 @@ import {
  * @description Входные ворота для создания товара. 
  * Каждый атрибут — это титановая защита.
  */
-export class CreateProductDto {
+export class CreateProductsDto {
 
 	@IsNotEmpty({ message: 'messageId (UUID) обязателен для обеспечения идемпотентности' })
   @IsUUID('4', { message: 'messageId должен быть валидным UUID v4' })
