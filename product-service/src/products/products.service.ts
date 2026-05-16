@@ -1,9 +1,8 @@
 import { ConflictException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { CreateProductsDto } from './dto/create-products.dto';
-import { UpdateProductsDto } from './dto/update-products.dto';
 import { PrismaService } from 'src/prisma.service';
 import { RedisService } from 'provider/redis/redis.service';
-import { RaabbitMQService } from 'provider/rabbitmq/rabbitmq.service';
+import { RabbitMQService } from 'provider/rabbitmq/rabbitmq.service';
 import { Product, ProductStatus } from 'prisma/client';
 
 @Injectable()
@@ -11,9 +10,9 @@ export class ProductsService {
 	private readonly logger = new Logger(ProductsService.name);
 
 	constructor(
-		private prisma: PrismaService, 
-		private redis: RedisService, 
-		private rabbit: RaabbitMQService
+		private prisma: PrismaService,
+		private redis: RedisService,
+		private rabbit: RabbitMQService
 	) {}
 
 
@@ -51,21 +50,26 @@ export class ProductsService {
 	 * @param - получение товара по его имени
 	 * @description - получение товара по его имени будут выведенны все товары разом с этим именем
 	 */
-	async findProductName(name: string): Promise<Product[]> {
-		const product = await this.prisma.product.findMany({
-			where: { 
-				name: {
-          contains: name, // Поиск по части имени (LIKE в SQL)
-          mode: 'insensitive' // Игнорировать регистр (чтобы "Кеды" и "кеды" находились одинаково)
-        }
-			 },
-		});
-	
-		if (product.length === 0) {
+	async findProductByName(name: string): Promise<Product[]> {
+		this.logger.log(`Raw SQL search for products containing: ${name}`);
+
+		// Формируем паттерн для поиска LIKE (например, "%кеды%")
+    const searchPattern = `%${name}%`;
+
+		// Выполняем сырой запрос.
+    // Prisma под капотом сама сделает этот запрос параметризованным для защиты от инъекций!
+    const products: Product[] = await this.prisma.$queryRaw`
+      SELECT id, name, slug, sku, price, description, status, "created_at", "updated_at"
+      FROM "products"
+      WHERE name ILIKE ${searchPattern} AND status = 'ACTIVE'
+      LIMIT 50
+    `;
+
+    if (products.length === 0) {
       throw new NotFoundException(`Товары с именем "${name}" не найдены`);
     }
-	
-		return product;
+
+    return products;
 	}
 
 	 /**

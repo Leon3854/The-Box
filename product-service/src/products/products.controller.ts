@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Logger, ParseUUIDPipe } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductsDto } from './dto/create-products.dto';
-import { UpdateProductsDto } from './dto/update-products.dto';
 import { Product } from 'prisma/client';
 import { UpdateStatusDto } from './dto/update-status.dto';
 
@@ -33,7 +32,7 @@ export class ProductsController {
    */
 	@Get('search/:name')
   async findByName(@Param('name') name: string): Promise<Product[]> {
-    return this.productsService.findProductName(name);
+    return this.productsService.findProductByName(name);
   }
 
 	/**

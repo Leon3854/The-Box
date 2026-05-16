@@ -3,8 +3,8 @@ import * as amqp from "amqp-connection-manager";
 
 
 @Injectable()
-export class RaabbitMQService implements OnModuleInit, OnModuleDestroy {
-	private readonly logger = new Logger(RaabbitMQService.name)
+export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
+	private readonly logger = new Logger(RabbitMQService.name)
 	private connection: amqp.AmqpConnectionManager;
 	private channelWrapper: amqp.ChannelWrapper;
 
@@ -27,7 +27,7 @@ export class RaabbitMQService implements OnModuleInit, OnModuleDestroy {
       json: true,
       setup: (channel: any) => {
         // Эта функция выполнится ПРИ КАЖДОМ реконнекте автоматически
-        this.logger.log('🛠️ Asserting Queue: product_events');
+        this.logger.log('Asserting Queue: product_events');
         return channel.assertQueue('product_events',
 					{ 
 						durable: true,
