@@ -3,18 +3,22 @@ services:
     build:
       context: ./product-service 
       dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
+    command: node dist/src/main.js
     env_file: .env
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
-      - RABBITMQ_URL=${RABBITMQ_URL} || amqp://guest:guest@rabbitmq:5672
+      - RABBITMQ_URL=${RABBITMQ_URL}
       # - CLICKHOUSE_HOST=monitoring-clickhouse
       - PORT=${PORT}
     ports:
       - '3002:3000'
-    volumes:
-      - .:/app  # для hot-reload
-      - /app/node_modules
+    # volumes:
+      # - ./product-service:/app  # для hot-reload
+      # - /app/node_modules
+      # - /app/dist 
     # logging: # Включаем "сбор логов" для Loki
       # driver: "json-file"
       # options:
@@ -26,25 +30,25 @@ services:
     restart: unless-stopped
   
   # Stock Service
-  stock-service:
-    build:
-      context: ./stock-service 
-      dockerfile: Dockerfile
-    env_file: .env
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - RABBITMQ_URL=${RABBITMQ_URL}
-    ports:
-      - '3001:3001'
-    volumes:
-      - .:/app  # для hot-reload
-      - /app/node_modules
-    depends_on:
-      thebox-db: { condition: service_healthy }
-      redis: { condition: service_healthy }
-      # loki: { condition: service_started } # Ждем лог-сервер
-    restart: unless-stopped 
+  # stock-service:
+  #   build:
+  #     context: ./stock-service 
+  #     dockerfile: Dockerfile
+  #   env_file: .env
+  #   environment:
+  #     - DATABASE_URL=${DATABASE_URL}
+  #     - REDIS_URL=${REDIS_URL}
+  #     - RABBITMQ_URL=${RABBITMQ_URL}
+  #   ports:
+  #     - '3001:3001'
+  #   volumes:
+  #     - ./stock-service:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     thebox-db: { condition: service_healthy }
+  #     redis: { condition: service_healthy }
+  #     # loki: { condition: service_started } # Ждем лог-сервер
+  #   restart: unless-stopped 
   # --- OBSERVABILITY STACK ---
 
   # prometheus:

@@ -39,5 +39,7 @@ model Product {
   stockCount Int     @default(0)
 
   @@index([name]) // Индекс для быстрого поиска по имени
+  @@index([sku])
+  @@index([status])
   @@map("products")
 }
