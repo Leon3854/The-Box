@@ -1,0 +1,24 @@
+{% comment %} Service прокинет внутренние сетевые порты (ClusterIP) 
+внутри кластера, чтобы сервисы могли общаться между собой и до них 
+мог достучаться наш будущий API Gateway (Kong). 
+{% endcomment %}
+{{- range $serviceName, $serviceConfig := .Values }}
+{{- if and (kindIs "map" $serviceConfig) $serviceConfig.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $serviceName }}-service
+  labels:
+    app: {{ $serviceName }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ $serviceConfig.service.port }}
+      targetPort: {{ $serviceConfig.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ $serviceName }}
+{{- end }}
+{{- end }}
