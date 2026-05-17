@@ -1,0 +1,61 @@
+# Здесь реализуем план: product-service включен на 3 копии, 
+# остальные два сервиса — в режиме ожидания (enabled: false), 
+# но структура под них уже полностью готова.
+
+global:
+  environment: production
+  namespace: the-box
+
+# 1. Бронированный каталог (Включен на максимум)
+product-service:
+  enabled: true
+  replicaCount: 3  # горизонтальное расширение
+  image:
+    repository: thebox060526-product-service
+    tag: latest
+    pullPolicy: Never
+  service:
+    port: 3000
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# 2. Сервис Склада (Ждет своей очереди)
+stock-service:
+  enabled: false
+  replicaCount: 3
+  image:
+    repository: thebox060526-stock-service
+    tag: latest
+    pullPolicy: Never
+  service:
+    port: 3001
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# 3. Сервис Заказов (Ждет своей очереди)
+order-service:
+  enabled: false
+  replicaCount: 3
+  image:
+    repository: thebox060526-order-service
+    tag: latest
+    pullPolicy: Never
+  service:
+    port: 3002
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi

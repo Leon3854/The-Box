@@ -1,0 +1,13 @@
+{% comment %} # Тут переменные окружения кластера k8s {% endcomment %}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thebox-shared-config
+  labels:
+    app.kubernetes.io/managed-by: Helm
+data:
+  NODE_ENV: "production"
+  DATABASE_URL: "postgresql://postgres:123456@thebox-db-service:5432/thebox_db"
+  REDIS_URL: "redis://redis-service:6379"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service:5672"

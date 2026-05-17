@@ -1,0 +1,7 @@
+# Это манифест, который говорит Kubernetes, что перед ним находится официальный пакет.
+apiVersion: v2
+name: the-box-architecture
+description: Highload Microservice Saga Platform Deployment (NestJS, Redis, Postgres, RabbitMQ)
+type: application
+version: 1.0.0
+appVersion: "2026.05"
